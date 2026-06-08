@@ -1,0 +1,19 @@
+# Python
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
+backend/*.pyo
+backend/.env
+
+# LanceDB data
+backend/lancedb_data/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+
+# Misc
+*.log
+.DS_Store
+sample_document.txt
