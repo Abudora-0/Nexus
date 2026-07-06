@@ -8,6 +8,10 @@ A fully local document chat application. Upload PDFs or text files and ask quest
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
 ![Ollama](https://img.shields.io/badge/Ollama-Local_LLM-black)
 
+## Design
+
+An archive reading room: espresso-ink dark theme with parchment text and brass accents, Cormorant Garamond display type over Spectral body serif, a card-catalogue sidebar, manuscript-leaf chat bubbles, and citations rendered as § footnotes. Fits the product: a private, local archive you consult.
+
 ## Features
 
 - **Local-First** — all processing runs via Ollama; your documents never leave your machine

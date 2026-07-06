@@ -217,10 +217,10 @@ export default function App() {
       {/* ════ SIDEBAR ════ */}
       <aside className="sidebar">
         <div className="sidebar-header">
-          <div className="sidebar-logo"><BookOpen size={15} color="white" /></div>
+          <div className="sidebar-logo"><BookOpen size={16} /></div>
           <div style={{flex:1}}>
             <div className="sidebar-title">Nexus</div>
-            <div className="sidebar-subtitle">Chat with your docs</div>
+            <div className="sidebar-subtitle">Private reading room</div>
           </div>
           <button className="icon-btn" onClick={startNewChat} title="New chat"><Plus size={15}/></button>
         </div>
@@ -327,7 +327,7 @@ export default function App() {
         {/* Header */}
         <div className="chat-header">
           <div className="chat-header-left">
-            <Sparkles size={15} color="#6366f1"/>
+            <Sparkles size={15} color="#c9a45c"/>
             <div>
               <div className="chat-header-title">
                 {selectedDocs.size === 0 ? "All Documents"
@@ -355,10 +355,10 @@ export default function App() {
           {messages.length === 0 ? (
             <div className="welcome">
               <div className="welcome-icon"><BookOpen size={26}/></div>
-              <h2>Chat with your documents</h2>
-              <p>Upload a file, select it from the sidebar, and ask anything about its content.</p>
+              <h2>Consult the archive.</h2>
+              <p>Deposit a document, select it from the catalogue, and put your questions to it. Nothing leaves this room.</p>
               <div className="welcome-steps">
-                {[["1","Upload","Drop a PDF or TXT"],["2","Select","Click docs to focus"],["3","Ask","Type your question"]].map(([n,t,d])=>(
+                {[["I","Deposit","File a PDF or TXT"],["II","Select","Choose from the catalogue"],["III","Inquire","Put your question to it"]].map(([n,t,d])=>(
                   <div className="step" key={n}>
                     <div className="step-num">{n}</div>
                     <strong style={{fontSize:"0.78rem",color:"var(--text-primary)"}}>{t}</strong>
@@ -370,7 +370,7 @@ export default function App() {
           ) : messages.filter(msg => !(msg.streaming && msg.content === "")).map(msg => (
             <div key={msg.id} className={`message-row ${msg.role}`}>
               <div className={`avatar ${msg.role==="assistant"?"ai":"user"}`}>
-                {msg.role==="assistant" ? <Bot size={14} color="white"/> : <User size={13}/>}
+                {msg.role==="assistant" ? <Bot size={14}/> : <User size={13}/>}
               </div>
               <div className="bubble-wrap">
                 <div className="bubble">
@@ -418,7 +418,7 @@ export default function App() {
 
           {thinking && messages[messages.length-1]?.streaming && messages[messages.length-1]?.content==="" && (
             <div className="thinking-row">
-              <div className="avatar ai"><Bot size={14} color="white"/></div>
+              <div className="avatar ai"><Bot size={14}/></div>
               <div className="thinking-dots"><span/><span/><span/></div>
             </div>
           )}
@@ -464,7 +464,7 @@ export default function App() {
           <div className="modal" onClick={e=>e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title">
-                <FileSearch size={15} color="#6366f1"/>
+                <FileSearch size={15} color="#c9a45c"/>
                 Summary — {shortName(summaryDoc)}
               </div>
               <button className="icon-btn" onClick={()=>setSummaryDoc(null)}><X size={14}/></button>
