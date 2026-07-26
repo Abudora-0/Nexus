@@ -14,9 +14,7 @@
   <img src="https://img.shields.io/badge/Ollama-Local_LLM-black" alt="Ollama" />
 </p>
 
-<!-- SCREENSHOT: add a screenshot of the app at docs/screenshot.png and uncomment the line below
 <p align="center"><img src="docs/screenshot.png" alt="Nexus UI" width="850" /></p>
--->
 
 ## Design
 
