@@ -3,13 +3,13 @@ import { useDropzone } from "react-dropzone";
 import ReactMarkdown from "react-markdown";
 import {
   Upload, Trash2, Loader2, Bot, User, Send, X, FileText, FileType,
-  Sparkles, Zap, Copy, Check, BookOpen, Paperclip, Download,
+  Sparkles, Zap, Copy, Check, Cpu, Paperclip, Download, Menu,
   History, Plus, ChevronDown, ChevronRight, Layers, FileSearch,
 } from "lucide-react";
-import { uploadFile, chatStream, summarizeDoc, listDocuments, deleteDocument } from "./api";
+import { uploadFile, chatStream, summarizeDoc, listDocuments, deleteDocument, getHealth } from "./api";
 import type { SourceChunk } from "./api";
 import type { ChatSession, StoredMessage } from "./chatStorage";
-import { loadSessions, saveSession, deleteSession, newSession, deriveTitle, exportMarkdown } from "./chatStorage";
+import { loadSessions, saveSession, deleteSession, clearAllSessions, newSession, deriveTitle, exportMarkdown } from "./chatStorage";
 import "./App.css";
 
 interface Message {
@@ -39,13 +39,22 @@ export default function App() {
   const [summaryText, setSummaryText]   = useState("");
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [tab, setTab]                   = useState<"docs"|"history">("docs");
+  const [model, setModel]               = useState<string|null>(null);
+  const [sidebarOpen, setSidebarOpen]   = useState(false);
 
   const bottomRef      = useRef<HTMLDivElement>(null);
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
   const selectedDocsRef = useRef<Set<string>>(selectedDocs);
 
   useEffect(() => { listDocuments().then(setDocuments).catch(()=>{}); }, []);
+  useEffect(() => { getHealth().then(h => setModel(h.model)).catch(()=>{}); }, []);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  // selectedDocsRef must always mirror selectedDocs: sendMessage reads the ref
+  // (not the state) to avoid stale closures. Syncing here, once, means every
+  // setSelectedDocs call site (upload auto-select, history load, delete, toggle)
+  // stays correct automatically instead of each needing to remember to update
+  // the ref itself.
+  useEffect(() => { selectedDocsRef.current = selectedDocs; }, [selectedDocs]);
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
@@ -58,15 +67,10 @@ export default function App() {
     setSelectedDocs(prev => {
       const next = new Set(prev);
       next.has(d) ? next.delete(d) : next.add(d);
-      selectedDocsRef.current = next;
       return next;
     });
   };
-  const clearDocs = () => {
-    const empty = new Set<string>();
-    selectedDocsRef.current = empty;
-    setSelectedDocs(empty);
-  };
+  const clearDocs = () => setSelectedDocs(new Set());
 
   // ── Upload ──────────────────────────────────────────────────────
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -168,6 +172,7 @@ export default function App() {
   const startNewChat = () => {
     const s = newSession([...selectedDocs]);
     setSession(s); setMessages([]);
+    setSidebarOpen(false);
   };
 
   // ── Load history session ─────────────────────────────────────────
@@ -179,6 +184,13 @@ export default function App() {
     })));
     if (s.docIds.length) setSelectedDocs(new Set(s.docIds));
     setTab("docs");
+    setSidebarOpen(false);
+  };
+
+  const clearHistory = () => {
+    if (!confirm("Clear all chat history? This can't be undone.")) return;
+    clearAllSessions();
+    setSessions([]);
   };
 
   // ── Export ───────────────────────────────────────────────────────
@@ -214,15 +226,23 @@ export default function App() {
   return (
     <div className="app">
 
+      {sidebarOpen && <div className="sidebar-backdrop" onClick={()=>setSidebarOpen(false)}/>}
+
       {/* ════ SIDEBAR ════ */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="sidebar-header">
-          <div className="sidebar-logo"><BookOpen size={16} /></div>
-          <div style={{flex:1}}>
-            <div className="sidebar-title">Nexus</div>
-            <div className="sidebar-subtitle">Private reading room</div>
+          <div className="sidebar-logo">
+            <svg width="18" height="18" viewBox="0 0 32 32" fill="none">
+              <path d="M16 1.5 29.5 9v14L16 30.5 2.5 23V9z" stroke="currentColor" strokeWidth="1.6"/>
+              <path d="M10 22V10l12 12V10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <div className="sidebar-header-text">
+            <div className="sidebar-title">NEXUS</div>
+            <div className="sidebar-subtitle">Private Neural Archive</div>
           </div>
           <button className="icon-btn" onClick={startNewChat} title="New chat"><Plus size={15}/></button>
+          <button className="icon-btn sidebar-close-btn" onClick={()=>setSidebarOpen(false)} title="Close menu"><X size={15}/></button>
         </div>
 
         {/* Tabs */}
@@ -298,7 +318,10 @@ export default function App() {
           </>}
 
           {tab === "history" && <>
-            <div className="section-label"><span>Recent chats · {sessions.length}</span></div>
+            <div className="section-label">
+              <span>Recent chats · {sessions.length}</span>
+              {sessions.length > 0 && <button onClick={clearHistory}>Clear</button>}
+            </div>
             <div className="history-list">
               {sessions.length === 0
                 ? <p className="doc-empty">No history yet</p>
@@ -327,8 +350,9 @@ export default function App() {
         {/* Header */}
         <div className="chat-header">
           <div className="chat-header-left">
-            <Sparkles size={15} color="#c9a45c"/>
-            <div>
+            <button className="icon-btn menu-btn" onClick={()=>setSidebarOpen(true)} title="Open menu"><Menu size={17}/></button>
+            <Sparkles size={15} style={{color:"var(--accent)"}}/>
+            <div className="chat-header-titles">
               <div className="chat-header-title">
                 {selectedDocs.size === 0 ? "All Documents"
                   : selectedDocs.size === 1 ? shortName([...selectedDocs][0])
@@ -345,7 +369,7 @@ export default function App() {
             )}
             <div className="model-badge">
               <div className="model-dot"/>
-              phi3:mini
+              {model ?? "connecting…"}
             </div>
           </div>
         </div>
@@ -354,11 +378,11 @@ export default function App() {
         <div className="messages">
           {messages.length === 0 ? (
             <div className="welcome">
-              <div className="welcome-icon"><BookOpen size={26}/></div>
-              <h2>Consult the archive.</h2>
-              <p>Deposit a document, select it from the catalogue, and put your questions to it. Nothing leaves this room.</p>
+              <div className="welcome-icon"><Cpu size={26}/></div>
+              <h2>Access the archive.</h2>
+              <p>Upload a document, lock onto a target, and transmit your query. Nothing leaves this terminal.</p>
               <div className="welcome-steps">
-                {[["I","Deposit","File a PDF or TXT"],["II","Select","Choose from the catalogue"],["III","Inquire","Put your question to it"]].map(([n,t,d])=>(
+                {[["I","Upload","Feed a PDF or TXT"],["II","Lock On","Select from the index"],["III","Query","Transmit your question"]].map(([n,t,d])=>(
                   <div className="step" key={n}>
                     <div className="step-num">{n}</div>
                     <strong style={{fontSize:"0.78rem",color:"var(--text-primary)"}}>{t}</strong>
@@ -464,8 +488,8 @@ export default function App() {
           <div className="modal" onClick={e=>e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title">
-                <FileSearch size={15} color="#c9a45c"/>
-                Summary — {shortName(summaryDoc)}
+                <FileSearch size={15} style={{color:"var(--accent)"}}/>
+                Summary: {shortName(summaryDoc)}
               </div>
               <button className="icon-btn" onClick={()=>setSummaryDoc(null)}><X size={14}/></button>
             </div>

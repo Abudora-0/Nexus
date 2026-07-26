@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -11,10 +13,46 @@ from vectorstore import search, list_documents, delete_document, get_all_chunks
 
 load_dotenv()
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-CHAT_MODEL      = os.getenv("CHAT_MODEL", "phi3:mini")
+CHAT_MODEL      = os.getenv("CHAT_MODEL", "qwen2.5:1.5b")
+EMBED_MODEL     = os.getenv("EMBED_MODEL", "nomic-embed-text")
+
+# How long Ollama keeps a model resident in RAM between requests. Without this,
+# Ollama's default (5 min) evicts the model and every question after a short
+# pause pays the full cold-load cost again, which is what causes "response
+# timed out" on the first (or first-after-idle) message.
+KEEP_ALIVE = "30m"
+
+logger = logging.getLogger("nexus")
 
 app = FastAPI(title="Nexus API", version="2.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+
+async def _warm_model(client: httpx.AsyncClient, model: str, url: str, payload: dict):
+    try:
+        resp = await client.post(url, json=payload)
+        resp.raise_for_status()
+        logger.info(f"Warmed up model '{model}'")
+    except Exception as e:
+        logger.warning(f"Could not warm up model '{model}': {e}")
+
+
+@app.on_event("startup")
+async def warmup_models():
+    """Load both models into RAM in the background so the user's first real
+    question doesn't have to wait for a cold model load on top of generation."""
+    async def _run():
+        async with httpx.AsyncClient(timeout=120) as client:
+            await asyncio.gather(
+                _warm_model(client, CHAT_MODEL, f"{OLLAMA_BASE_URL}/api/generate", {
+                    "model": CHAT_MODEL, "prompt": "hi", "stream": False,
+                    "keep_alive": KEEP_ALIVE, "options": {"num_predict": 1},
+                }),
+                _warm_model(client, EMBED_MODEL, f"{OLLAMA_BASE_URL}/api/embed", {
+                    "model": EMBED_MODEL, "input": "hi", "keep_alive": KEEP_ALIVE,
+                }),
+            )
+    asyncio.create_task(_run())
 
 
 # ── Upload ────────────────────────────────────────────────────────────────────
@@ -30,6 +68,11 @@ async def upload_document(file: UploadFile = File(...)):
         result = await ingest_file(file_bytes, file.filename)
     except ValueError as e:
         raise HTTPException(422, str(e))
+    except Exception as e:
+        logger.error(f"Upload failed for '{file.filename}': {e}\n{traceback.format_exc()}")
+        raise HTTPException(500, f"Failed to process '{file.filename}'. It may be empty, corrupted, or scanned-image-only.")
+    if result["chunks"] == 0:
+        raise HTTPException(422, f"No usable text found in '{file.filename}'. It may be a scanned/image-only PDF.")
     return {"message": "Uploaded successfully.", **result}
 
 
@@ -70,7 +113,7 @@ async def chat_stream(req: ChatRequest):
     sources      = list(dict.fromkeys(c["doc_id"] for c in chunks))
     src_chunks   = [{"doc_id": c["doc_id"], "text": c["text"][:200]} for c in chunks]
 
-    # phi3 native prompt format
+    # Chat-style prompt format
     prompt = (
         "<|system|>\n"
         "You are Nexus, an expert document assistant. Answer questions using ONLY the provided context.\n"
@@ -88,13 +131,15 @@ async def chat_stream(req: ChatRequest):
     async def stream_tokens():
         yield _send("sources", data=sources, chunks=src_chunks)
         try:
-            async with httpx.AsyncClient(timeout=120) as client:
+            timeout = httpx.Timeout(connect=10.0, read=180.0, write=30.0, pool=10.0)
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 async with client.stream(
                     "POST", f"{OLLAMA_BASE_URL}/api/generate",
                     json={
                         "model": CHAT_MODEL,
                         "prompt": prompt,
                         "stream": True,
+                        "keep_alive": KEEP_ALIVE,
                         "options": {
                             "num_predict": 512,   # max tokens to generate
                             "num_ctx": 2048,       # context window (default 131k = very slow!)
@@ -105,7 +150,7 @@ async def chat_stream(req: ChatRequest):
                     }
                 ) as resp:
                     if resp.status_code != 200:
-                        yield _send("token", data=f"⚠️ Model error (HTTP {resp.status_code}). Is Ollama running with phi3:mini?")
+                        yield _send("token", data=f"⚠️ Model error (HTTP {resp.status_code}). Is Ollama running with {CHAT_MODEL}?")
                         yield _send("done")
                         return
                     async for line in resp.aiter_lines():
@@ -148,11 +193,13 @@ async def summarize_document(doc_id: str):
 
     async def stream_summary():
         try:
-            async with httpx.AsyncClient(timeout=120) as client:
+            timeout = httpx.Timeout(connect=10.0, read=180.0, write=30.0, pool=10.0)
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 async with client.stream(
                     "POST", f"{OLLAMA_BASE_URL}/api/generate",
                     json={"model": CHAT_MODEL, "prompt": prompt, "stream": True,
-                          "options": {"num_predict": 600, "temperature": 0.2}}
+                          "keep_alive": KEEP_ALIVE,
+                          "options": {"num_predict": 600, "num_ctx": 2048, "temperature": 0.2}}
                 ) as resp:
                     async for line in resp.aiter_lines():
                         if not line: continue

@@ -1,5 +1,5 @@
 """
-ingestor.py — Document ingestion pipeline
+ingestor.py: Document ingestion pipeline
   1. Extract text from PDF/.txt
   2. Split into sentence-aware chunks (smarter than fixed-size)
   3. Embed in parallel batches

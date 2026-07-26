@@ -1,5 +1,5 @@
 /**
- * chatStorage.ts — persist chat sessions in localStorage
+ * chatStorage.ts: persist chat sessions in localStorage
  */
 
 export interface StoredMessage {
@@ -35,6 +35,10 @@ export function saveSession(session: ChatSession) {
 export function deleteSession(id: string) {
   const sessions = loadSessions().filter(s => s.id !== id);
   localStorage.setItem(KEY, JSON.stringify(sessions));
+}
+
+export function clearAllSessions() {
+  localStorage.removeItem(KEY);
 }
 
 export function newSession(docIds: string[] = []): ChatSession {

@@ -1,11 +1,11 @@
-# Nexus — How to Run
+# Nexus: How to Run
 
 ## First Time Setup (do this once)
 
 ### 1. Install Requirements
-- [Ollama](https://ollama.com) — local AI runtime
-- [Node.js](https://nodejs.org) — for the frontend
-- [Python 3.10+](https://python.org) — for the backend
+- [Ollama](https://ollama.com): local AI runtime
+- [Node.js](https://nodejs.org): for the frontend
+- [Python 3.10+](https://python.org): for the backend
 
 ### 2. Set Ollama Models Path
 So models are stored on D: drive instead of C:
@@ -26,17 +26,17 @@ Start-Process ollama -ArgumentList "serve" -WindowStyle Hidden
 
 ## Every Time You Want to Run Nexus
 
-### Step 1 — Start Ollama
+### Step 1: Start Ollama
 Open PowerShell and run:
 ```powershell
 $env:OLLAMA_MODELS = "D:\OllamaModels"
 Start-Process ollama -ArgumentList "serve" -WindowStyle Hidden
 ```
 
-### Step 2 — Start the Backend
-Open a **new PowerShell window** and run:
+### Step 2: Start the Backend
+Open a **new PowerShell window** and run, from the project root:
 ```powershell
-cd D:\Projects\docuchat\backend
+cd backend
 .\venv\Scripts\activate
 uvicorn main:app --reload
 ```
@@ -45,10 +45,10 @@ Wait until you see:
 INFO:     Application startup complete.
 ```
 
-### Step 3 — Start the Frontend
-Open **another new PowerShell window** and run:
+### Step 3: Start the Frontend
+Open **another new PowerShell window** and run, from the project root:
 ```powershell
-cd D:\Projects\docuchat\frontend
+cd frontend
 npm run dev
 ```
 Wait until you see:
@@ -57,7 +57,7 @@ VITE ready in ... ms
 ➜  Local: http://localhost:5173/
 ```
 
-### Step 4 — Open the App
+### Step 4: Open the App
 Go to your browser and open:
 ```
 http://localhost:5173
@@ -79,21 +79,21 @@ http://localhost:5173
 | Backend crashes on start | Make sure Ollama is running first |
 | Upload fails | Check backend terminal for error message |
 | "No documents found" | Make sure you clicked a document in the sidebar to select it |
-| Slow responses | Normal for first response — model loads into RAM, gets faster after |
+| Slow responses | Normal for the first response: the model loads into RAM, then gets faster |
 
 ---
 
 ## Models Used
 | Model | Purpose | Size | Location |
 |-------|---------|------|----------|
-| `phi3:mini` | Answering questions | 2.2 GB | D:\OllamaModels |
+| `qwen2.5:1.5b` | Answering questions | 986 MB | D:\OllamaModels |
 | `nomic-embed-text` | Document embeddings | 274 MB | D:\OllamaModels |
 
 ---
 
 ## Project Structure
 ```
-docuchat/
+Nexus/
 ├── backend/
 │   ├── main.py          ← FastAPI app (all API routes)
 │   ├── embedder.py      ← Converts text to vectors via Ollama

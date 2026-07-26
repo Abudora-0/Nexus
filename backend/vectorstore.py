@@ -22,7 +22,14 @@ def _get_table():
     return db.create_table(TABLE_NAME, schema=schema)
 
 
+def _escape(value: str) -> str:
+    """Escape a value for safe interpolation into a LanceDB SQL filter string."""
+    return value.replace("'", "''")
+
+
 def add_chunks(doc_id: str, chunks: list[str], vectors: list[list[float]]):
+    if not chunks:
+        return
     table = _get_table()
     rows = [
         {"id": f"{doc_id}_{i}", "doc_id": doc_id, "text": chunk,
@@ -39,26 +46,26 @@ def search(
     doc_ids: list[str] | None = None,
 ) -> list[dict]:
     """Semantic search with optional single or multi-doc filter.
-    We fetch a larger pool first, then post-filter by doc_id — more
-    reliable than LanceDB's .where() on vector search results.
+
+    Uses prefilter=True so the doc_id filter is applied *before* the
+    nearest-neighbor search runs, scoping it to just the matching
+    document(s). Without prefilter, LanceDB (like most vector DBs)
+    filters *after* ranking the global top-K nearest neighbors, so a
+    document with few chunks can be crowded out of the pool entirely
+    once other documents in the table outnumber it, silently returning
+    no results for a document that clearly exists.
     """
     table = _get_table()
-    # If filtering, fetch a bigger pool so we still get top_k after filtering
-    fetch_limit = top_k if not (doc_id or doc_ids) else top_k * 10
-    results = (
-        table.search(np.array(query_vector, dtype=np.float32))
-        .limit(fetch_limit)
-        .to_list()
-    )
+    query = table.search(np.array(query_vector, dtype=np.float32))
 
-    # Post-filter by document
     if doc_id:
-        results = [r for r in results if r["doc_id"] == doc_id]
+        query = query.where(f"doc_id = '{_escape(doc_id)}'", prefilter=True)
     elif doc_ids:
-        doc_ids_set = set(doc_ids)
-        results = [r for r in results if r["doc_id"] in doc_ids_set]
+        ids_list = ", ".join(f"'{_escape(d)}'" for d in doc_ids)
+        query = query.where(f"doc_id IN ({ids_list})", prefilter=True)
 
-    return [{"text": r["text"], "doc_id": r["doc_id"]} for r in results[:top_k]]
+    results = query.limit(top_k).to_list()
+    return [{"text": r["text"], "doc_id": r["doc_id"]} for r in results]
 
 
 def get_all_chunks(doc_id: str) -> list[str]:
@@ -77,7 +84,7 @@ def get_all_chunks(doc_id: str) -> list[str]:
 
 def delete_document(doc_id: str):
     table = _get_table()
-    table.delete(f"doc_id = '{doc_id}'")
+    table.delete(f"doc_id = '{_escape(doc_id)}'")
 
 
 def list_documents() -> list[str]:
