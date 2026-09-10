@@ -1,0 +1,27 @@
+# Render blueprint for the Nexus backend (free tier).
+# In Render: New > Blueprint > pick this repo. Then set the two secret
+# env vars (GEMINI_API_KEY, ALLOWED_ORIGINS) in the dashboard.
+services:
+  - type: web
+    name: nexus-api
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: CHAT_MODEL
+        value: gemini-2.0-flash
+      - key: EMBED_MODEL
+        value: text-embedding-004
+      - key: EMBED_DIM
+        value: "768"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false

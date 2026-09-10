@@ -1,0 +1,90 @@
+ARTIFICIAL INTELLIGENCE - STUDY NOTES
+======================================
+
+## What is Artificial Intelligence?
+Artificial Intelligence (AI) is the simulation of human intelligence in machines programmed to think and learn. AI systems can perform tasks that typically require human intelligence such as visual perception, speech recognition, decision-making, and language translation.
+
+## Types of AI
+
+### 1. Narrow AI (Weak AI)
+Narrow AI is designed to perform a specific task. Examples include:
+- Siri and Alexa (voice assistants)
+- Netflix recommendation system
+- Google Translate
+- Chess-playing programs like Deep Blue
+
+### 2. General AI (Strong AI)
+General AI refers to machines that possess the ability to perform any intellectual task that a human can. This type of AI does not yet exist but is a long-term research goal.
+
+### 3. Super AI
+Super AI would surpass human intelligence in all areas. This remains theoretical and is a topic of significant ethical debate.
+
+## Machine Learning
+Machine Learning (ML) is a subset of AI that allows systems to learn from data without being explicitly programmed. There are three main types:
+
+- Supervised Learning: The model is trained on labeled data. Example: spam email detection.
+- Unsupervised Learning: The model finds patterns in unlabeled data. Example: customer segmentation.
+- Reinforcement Learning: The model learns by receiving rewards or penalties. Example: training a robot to walk.
+
+## Deep Learning
+Deep Learning is a subset of machine learning that uses neural networks with many layers (hence "deep"). It powers most modern AI breakthroughs including:
+- Image recognition (used in self-driving cars)
+- Natural language processing (used in ChatGPT)
+- Medical diagnosis (detecting cancer in X-rays)
+
+## Neural Networks
+A neural network is inspired by the human brain. It consists of:
+- Input Layer: receives raw data
+- Hidden Layers: process and transform the data
+- Output Layer: produces the final result
+
+Each connection between neurons has a weight that is adjusted during training.
+
+## Large Language Models (LLMs)
+LLMs like GPT-4 and Claude are trained on massive text datasets. They can:
+- Answer questions
+- Write code
+- Summarize documents
+- Translate languages
+- Generate creative content
+
+LLMs use a technique called the Transformer architecture, introduced in the 2017 paper "Attention Is All You Need."
+
+## RAG - Retrieval Augmented Generation
+RAG is a technique that combines a language model with a knowledge base. Instead of relying solely on training data, the model retrieves relevant documents at query time and uses them as context. This reduces hallucination and allows the model to answer questions about private or recent data.
+
+Steps in RAG:
+1. User asks a question
+2. The question is converted to an embedding (vector)
+3. Similar document chunks are retrieved from a vector database
+4. The chunks are passed to the LLM as context
+5. The LLM generates an answer grounded in the retrieved text
+
+## Key AI Terms
+- Hallucination: When an AI generates false information confidently
+- Embedding: A numerical vector that represents meaning of text
+- Token: A unit of text (roughly a word or part of a word)
+- Fine-tuning: Further training a pre-trained model on specific data
+- Prompt Engineering: Crafting inputs to get better AI outputs
+- Vector Database: A database that stores and searches embeddings
+
+## Applications of AI in 2025
+1. Healthcare: Drug discovery, medical imaging, patient diagnosis
+2. Finance: Fraud detection, algorithmic trading, credit scoring
+3. Education: Personalized tutoring, automated grading
+4. Transportation: Self-driving vehicles, route optimization
+5. Cybersecurity: Threat detection, anomaly detection
+
+## Ethical Concerns in AI
+- Bias: AI models can inherit biases from training data
+- Privacy: AI systems often require large amounts of personal data
+- Job Displacement: Automation may replace certain jobs
+- Deepfakes: AI-generated fake videos and images
+- Autonomous Weapons: AI used in military applications raises moral questions
+
+## Famous AI Researchers
+- Alan Turing: Pioneer of computer science, proposed the Turing Test
+- Geoffrey Hinton: "Godfather of Deep Learning", won the 2024 Nobel Prize in Physics
+- Yann LeCun: Pioneered convolutional neural networks (CNNs)
+- Andrew Ng: Co-founder of Google Brain, founder of Coursera's AI courses
+- Demis Hassabis: CEO of Google DeepMind, co-developed AlphaGo

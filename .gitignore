@@ -4,6 +4,7 @@ backend/__pycache__/
 backend/*.pyc
 backend/*.pyo
 backend/.env
+!backend/.env.example
 
 # LanceDB data
 backend/lancedb_data/

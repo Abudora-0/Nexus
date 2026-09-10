@@ -4,7 +4,9 @@
 
 <h1 align="center">Nexus</h1>
 
-<p align="center">A fully local document chat application. Upload PDFs or text files and ask questions about them, powered by RAG (Retrieval-Augmented Generation) with local AI models via Ollama. No API keys, no cloud, no data leaves your machine.</p>
+<p align="center">A document chat application. Upload PDFs or text files and ask questions about them, powered by RAG (Retrieval-Augmented Generation). Runs <strong>fully local</strong> via Ollama — no API keys, no cloud, no data leaves your machine — or against a hosted API for a zero-cost public demo.</p>
+
+<p align="center"><a href="DEPLOY.md">Live demo setup</a> · runs the same pipeline on the Google Gemini free tier</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white" alt="FastAPI" />
@@ -22,7 +24,8 @@ A neon terminal / data archive: void-black background with a drifting circuit gr
 
 ## Features
 
-- **Local-First**: all processing runs via Ollama; your documents never leave your machine
+- **Local-First**: with the default Ollama provider, all processing runs on your machine and your documents never leave it
+- **Pluggable AI backend**: one env var (`LLM_PROVIDER`) switches between local Ollama and the hosted Gemini API — see [DEPLOY.md](DEPLOY.md)
 - **PDF & TXT Support**: upload and parse documents up to 10 MB
 - **Semantic Search**: documents are chunked, embedded, and stored in LanceDB for vector similarity search
 - **Streaming Responses**: answers stream token-by-token via Server-Sent Events
@@ -39,9 +42,9 @@ A neon terminal / data archive: void-black background with a drifting circuit gr
 | Layer | Technology |
 |---|---|
 | API | FastAPI + Uvicorn |
-| LLM Runtime | Ollama |
-| Language Model | `qwen2.5:1.5b` (986 MB) |
-| Embeddings | `nomic-embed-text` (274 MB) |
+| AI backend | Ollama (local) or Gemini API (hosted) — set via `LLM_PROVIDER` |
+| Language Model | `qwen2.5:1.5b` local · `gemini-2.0-flash` hosted |
+| Embeddings | `nomic-embed-text` local · `text-embedding-004` hosted |
 | Vector Store | LanceDB |
 | PDF Parsing | pdfplumber |
 | HTTP Client | httpx |
@@ -82,6 +85,8 @@ venv\Scripts\activate
 source venv/bin/activate
 
 pip install -r requirements.txt
+
+cp .env.example .env   # then edit: default is LLM_PROVIDER=ollama for local use
 uvicorn main:app --reload
 ```
 

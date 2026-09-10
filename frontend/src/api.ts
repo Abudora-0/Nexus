@@ -1,4 +1,5 @@
-const BASE = "http://localhost:8000";
+// Points at the local backend in dev; set VITE_API_URL at build time for deploys.
+const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
 export interface UploadResponse {
   doc_id: string; filename: string; chunks: number; chars: number;

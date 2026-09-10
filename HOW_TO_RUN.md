@@ -1,5 +1,8 @@
 # Nexus: How to Run
 
+> This guide covers running Nexus **locally** with Ollama. To put a free public
+> demo online (hosted on the Gemini API free tier), see [DEPLOY.md](DEPLOY.md).
+
 ## First Time Setup (do this once)
 
 ### 1. Install Requirements
