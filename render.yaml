@@ -1,6 +1,6 @@
 # Render blueprint for the Nexus backend (free tier).
-# In Render: New > Blueprint > pick this repo. Then set the two secret
-# env vars (GEMINI_API_KEY, ALLOWED_ORIGINS) in the dashboard.
+# In Render: New > Blueprint > pick this repo. Then set the secret env vars
+# (GROQ_API_KEY, GEMINI_API_KEY, ALLOWED_ORIGINS) in the dashboard.
 services:
   - type: web
     name: nexus-api
@@ -13,14 +13,18 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.7
-      - key: LLM_PROVIDER
-        value: gemini
+      - key: CHAT_PROVIDER
+        value: groq
       - key: CHAT_MODEL
-        value: gemini-2.0-flash
+        value: llama-3.3-70b-versatile
+      - key: EMBED_PROVIDER
+        value: gemini
       - key: EMBED_MODEL
         value: text-embedding-004
       - key: EMBED_DIM
         value: "768"
+      - key: GROQ_API_KEY
+        sync: false
       - key: GEMINI_API_KEY
         sync: false
       - key: ALLOWED_ORIGINS

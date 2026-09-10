@@ -117,9 +117,11 @@ async def chat_stream(req: ChatRequest):
 
     try:
         query_vector = await embed_text(req.question)
-    except Exception as e:
+    except Exception as exc:
+        err_msg = str(exc) or exc.__class__.__name__
+        logger.error(f"Embedding failed: {exc}")
         async def _err():
-            yield _send("token", data=f"⚠️ Embedding error: {e}")
+            yield _send("token", data=f"⚠️ Embedding error: {err_msg}")
             yield _send("done")
         return StreamingResponse(_err(), media_type="text/event-stream")
 
@@ -191,4 +193,8 @@ def remove_document(doc_id: str):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "provider": providers.PROVIDER, "model": providers.CHAT_MODEL}
+    return {
+        "status": "ok",
+        "chat": f"{providers.CHAT_PROVIDER}:{providers.CHAT_MODEL}",
+        "embed": f"{providers.EMBED_PROVIDER}:{providers.EMBED_MODEL}",
+    }

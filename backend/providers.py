@@ -1,14 +1,16 @@
 """
 providers.py
 ------------
-Pluggable AI backend. Nexus can talk to either:
+Pluggable AI backend. Chat and embeddings are chosen independently:
 
-  - "ollama"  local Ollama runtime  fully local, nothing leaves the machine
-  - "gemini"  Google Gemini API     hosted, has a free tier, used for the
-                                      public demo deployment
+  CHAT_PROVIDER   "ollama" | "gemini" | "groq"
+  EMBED_PROVIDER  "ollama" | "gemini"
 
-Pick one with LLM_PROVIDER in the environment. Both providers expose the
-same two coroutines so the rest of the app doesn't care which is active:
+Both default to LLM_PROVIDER (a single knob for local dev, where you want
+everything on "ollama"). The hosted demo runs chat on Groq (fast, free tier)
+and embeddings on Gemini (Groq has no embeddings API).
+
+The rest of the app only touches these two coroutines:
 
     embed_batch(texts)              -> list[list[float]]
     stream_chat(system, user, ...)  -> async iterator of text chunks
@@ -24,15 +26,21 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-PROVIDER = os.getenv("LLM_PROVIDER", "ollama").lower()
+_BOTH = os.getenv("LLM_PROVIDER", "ollama").lower()
+CHAT_PROVIDER = os.getenv("CHAT_PROVIDER", _BOTH).lower()
+EMBED_PROVIDER = os.getenv("EMBED_PROVIDER", _BOTH).lower()
 
 # Model names default sensibly per provider so a minimal .env still works.
-_DEFAULT_CHAT = {"ollama": "qwen2.5:1.5b", "gemini": "gemini-2.0-flash"}
+_DEFAULT_CHAT = {
+    "ollama": "qwen2.5:1.5b",
+    "gemini": "gemini-2.0-flash",
+    "groq": "llama-3.3-70b-versatile",
+}
 _DEFAULT_EMBED = {"ollama": "nomic-embed-text", "gemini": "text-embedding-004"}
-CHAT_MODEL = os.getenv("CHAT_MODEL", _DEFAULT_CHAT.get(PROVIDER, "qwen2.5:1.5b"))
-EMBED_MODEL = os.getenv("EMBED_MODEL", _DEFAULT_EMBED.get(PROVIDER, "nomic-embed-text"))
+CHAT_MODEL = os.getenv("CHAT_MODEL", _DEFAULT_CHAT.get(CHAT_PROVIDER, "qwen2.5:1.5b"))
+EMBED_MODEL = os.getenv("EMBED_MODEL", _DEFAULT_EMBED.get(EMBED_PROVIDER, "nomic-embed-text"))
 
-# Vector dimension the LanceDB table is built for. Both defaults above emit 768.
+# Vector dimension the LanceDB table is built for. Both embed defaults emit 768.
 EMBED_DIM = int(os.getenv("EMBED_DIM", "768"))
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
@@ -40,6 +48,9 @@ KEEP_ALIVE = "30m"
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta"
+
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_BASE = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
 
 _STREAM_TIMEOUT = httpx.Timeout(connect=10.0, read=180.0, write=30.0, pool=10.0)
 
@@ -55,7 +66,7 @@ def _l2_normalize(vec: list[float]) -> list[float]:
 # Embeddings
 
 async def embed_batch(texts: list[str]) -> list[list[float]]:
-    if PROVIDER == "gemini":
+    if EMBED_PROVIDER == "gemini":
         return await _gemini_embed(texts)
     return await _ollama_embed(texts)
 
@@ -103,8 +114,11 @@ async def stream_chat(
     temperature: float = 0.2,
 ) -> AsyncIterator[str]:
     """Yield the model's answer as it is generated, chunk by chunk."""
-    if PROVIDER == "gemini":
+    if CHAT_PROVIDER == "gemini":
         gen = _gemini_stream(system, user, max_tokens, temperature)
+    elif CHAT_PROVIDER == "groq":
+        gen = _openai_chat_stream(GROQ_BASE, GROQ_API_KEY, "GROQ_API_KEY",
+                                  system, user, max_tokens, temperature)
     else:
         gen = _ollama_stream(system, user, max_tokens, temperature)
     async for chunk in gen:
@@ -147,6 +161,43 @@ async def _ollama_stream(system, user, max_tokens, temperature):
                     yield token
                 if data.get("done"):
                     break
+
+
+async def _openai_chat_stream(base, key, key_name, system, user, max_tokens, temperature):
+    """Streaming chat over any OpenAI-compatible /chat/completions endpoint (Groq)."""
+    if not key:
+        raise RuntimeError(f"{key_name} is not set.")
+    body = {
+        "model": CHAT_MODEL,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        "max_tokens": max_tokens,
+        "temperature": temperature,
+        "top_p": 0.9,
+        "stream": True,
+    }
+    async with httpx.AsyncClient(timeout=_STREAM_TIMEOUT) as client:
+        async with client.stream(
+            "POST",
+            f"{base}/chat/completions",
+            headers={"Authorization": f"Bearer {key}"},
+            json=body,
+        ) as resp:
+            resp.raise_for_status()
+            async for line in resp.aiter_lines():
+                if not line or not line.startswith("data:"):
+                    continue
+                payload = line[5:].strip()
+                if not payload or payload == "[DONE]":
+                    continue
+                try:
+                    delta = json.loads(payload)["choices"][0].get("delta", {})
+                except (json.JSONDecodeError, IndexError, KeyError):
+                    continue
+                if content := delta.get("content"):
+                    yield content
 
 
 async def _gemini_stream(system, user, max_tokens, temperature):
@@ -193,22 +244,19 @@ async def _gemini_stream(system, user, max_tokens, temperature):
 
 async def warmup() -> None:
     """Pre-load local models into RAM. No-op for hosted providers."""
-    if PROVIDER != "ollama":
-        return
     async with httpx.AsyncClient(timeout=120) as client:
-        for url, payload in (
-            (
-                f"{OLLAMA_BASE_URL}/api/generate",
-                {"model": CHAT_MODEL, "prompt": "hi", "stream": False,
-                 "keep_alive": KEEP_ALIVE, "options": {"num_predict": 1}},
-            ),
-            (
-                f"{OLLAMA_BASE_URL}/api/embed",
-                {"model": EMBED_MODEL, "input": "hi", "keep_alive": KEEP_ALIVE},
-            ),
-        ):
+        if CHAT_PROVIDER == "ollama":
             try:
-                r = await client.post(url, json=payload)
+                r = await client.post(f"{OLLAMA_BASE_URL}/api/generate", json={
+                    "model": CHAT_MODEL, "prompt": "hi", "stream": False,
+                    "keep_alive": KEEP_ALIVE, "options": {"num_predict": 1}})
+                r.raise_for_status()
+            except Exception:
+                pass
+        if EMBED_PROVIDER == "ollama":
+            try:
+                r = await client.post(f"{OLLAMA_BASE_URL}/api/embed", json={
+                    "model": EMBED_MODEL, "input": "hi", "keep_alive": KEEP_ALIVE})
                 r.raise_for_status()
             except Exception:
                 pass

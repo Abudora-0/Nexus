@@ -6,7 +6,7 @@
 
 <p align="center">A document chat application. Upload PDFs or text files and ask questions about them, powered by RAG (Retrieval-Augmented Generation). Runs <strong>fully local</strong> via Ollama — no API keys, no cloud, no data leaves your machine — or against a hosted API for a zero-cost public demo.</p>
 
-<p align="center"><a href="DEPLOY.md">Live demo setup</a> · runs the same pipeline on the Google Gemini free tier</p>
+<p align="center"><a href="DEPLOY.md">Live demo setup</a> · runs the same pipeline on free-tier hosted APIs (Groq + Gemini)</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white" alt="FastAPI" />
@@ -25,7 +25,7 @@ A neon terminal / data archive: void-black background with a drifting circuit gr
 ## Features
 
 - **Local-First**: with the default Ollama provider, all processing runs on your machine and your documents never leave it
-- **Pluggable AI backend**: one env var (`LLM_PROVIDER`) switches between local Ollama and the hosted Gemini API — see [DEPLOY.md](DEPLOY.md)
+- **Pluggable AI backend**: chat and embeddings each switch independently between local Ollama and hosted APIs (Groq / Gemini) via env vars — see [DEPLOY.md](DEPLOY.md)
 - **PDF & TXT Support**: upload and parse documents up to 10 MB
 - **Semantic Search**: documents are chunked, embedded, and stored in LanceDB for vector similarity search
 - **Streaming Responses**: answers stream token-by-token via Server-Sent Events
@@ -42,9 +42,9 @@ A neon terminal / data archive: void-black background with a drifting circuit gr
 | Layer | Technology |
 |---|---|
 | API | FastAPI + Uvicorn |
-| AI backend | Ollama (local) or Gemini API (hosted) — set via `LLM_PROVIDER` |
-| Language Model | `qwen2.5:1.5b` local · `gemini-2.0-flash` hosted |
-| Embeddings | `nomic-embed-text` local · `text-embedding-004` hosted |
+| AI backend | Ollama (local) or Groq + Gemini (hosted) — `CHAT_PROVIDER` / `EMBED_PROVIDER` |
+| Language Model | `qwen2.5:1.5b` local · `llama-3.3-70b-versatile` (Groq) hosted |
+| Embeddings | `nomic-embed-text` local · `text-embedding-004` (Gemini) hosted |
 | Vector Store | LanceDB |
 | PDF Parsing | pdfplumber |
 | HTTP Client | httpx |
