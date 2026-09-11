@@ -47,7 +47,23 @@ export default function App() {
   const selectedDocsRef = useRef<Set<string>>(selectedDocs);
 
   useEffect(() => { listDocuments().then(setDocuments).catch(()=>{}); }, []);
-  useEffect(() => { getHealth().then(h => setModel(h.chat.split(":").pop() ?? h.chat)).catch(()=>{}); }, []);
+  // The demo backend (Render free tier) sleeps after ~15 min idle and can take
+  // up to ~50s to wake on the first request, so a single getHealth() attempt
+  // that fails leaves the header stuck on "connecting…" forever. Retry with
+  // backoff until it succeeds instead of giving up after one try.
+  useEffect(() => {
+    let cancelled = false;
+    const attempt = (n = 0) => {
+      getHealth()
+        .then(h => { if (!cancelled) setModel(h.chat.split(":").pop() ?? h.chat); })
+        .catch(() => {
+          if (cancelled || n >= 8) return;
+          setTimeout(() => attempt(n + 1), Math.min(2000 * (n + 1), 8000));
+        });
+    };
+    attempt();
+    return () => { cancelled = true; };
+  }, []);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
   // selectedDocsRef must always mirror selectedDocs: sendMessage reads the ref
   // (not the state) to avoid stale closures. Syncing here, once, means every
@@ -91,6 +107,14 @@ export default function App() {
       } finally { setUploading(false); }
     },
   });
+
+  // Auto-dismiss the upload status pill a few seconds after it lands, so a
+  // stale "3 chunks" message doesn't sit in the sidebar forever.
+  useEffect(() => {
+    if (!uploadStatus || uploadStatus.type === "loading") return;
+    const t = setTimeout(() => setUploadStatus(null), 4000);
+    return () => clearTimeout(t);
+  }, [uploadStatus]);
 
   // ── Summary ─────────────────────────────────────────────────────
   const handleSummarize = async (docId: string) => {
@@ -299,7 +323,16 @@ export default function App() {
                         <FileSearch size={11}/>
                       </button>
                       <button className="doc-action-btn danger" title="Delete"
-                        onClick={e=>{e.stopPropagation();deleteDocument(d).then(()=>listDocuments().then(setDocuments));setSelectedDocs(p=>{const n=new Set(p);n.delete(d);return n});}}>
+                        onClick={async e=>{
+                          e.stopPropagation();
+                          try {
+                            await deleteDocument(d);
+                            setDocuments(await listDocuments());
+                            setSelectedDocs(p=>{const n=new Set(p);n.delete(d);return n});
+                          } catch (err:any) {
+                            setUploadStatus({ type:"err", text: err.message || `Couldn't delete ${shortName(d)}` });
+                          }
+                        }}>
                         <Trash2 size={11}/>
                       </button>
                     </div>

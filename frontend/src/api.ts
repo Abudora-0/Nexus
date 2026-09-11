@@ -22,7 +22,8 @@ export async function listDocuments(): Promise<string[]> {
 }
 
 export async function deleteDocument(docId: string) {
-  await fetch(`${BASE}/documents/${docId}`, { method: "DELETE" });
+  const res = await fetch(`${BASE}/documents/${encodeURIComponent(docId)}`, { method: "DELETE" });
+  if (!res.ok) throw new Error(`Delete failed (${res.status})`);
 }
 
 export async function getHealth(): Promise<{ status: string; chat: string; embed: string }> {
