@@ -397,12 +397,12 @@ export default function App() {
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             {messages.length > 0 && (
               <button className="header-btn" onClick={exportChat} title="Export chat as Markdown">
-                <Download size={13}/> Export
+                <Download size={13}/> <span className="btn-label">Export</span>
               </button>
             )}
-            <div className="model-badge">
+            <div className="model-badge" title={model ?? "connecting…"}>
               <div className="model-dot"/>
-              {model ?? "connecting…"}
+              <span className="model-name">{model ?? "connecting…"}</span>
             </div>
           </div>
         </div>

@@ -957,3 +957,15 @@
   .message-row.user .bubble { max-width: 78vw; }
   .chat-header-sub { display: none; }
 }
+
+/* Once a doc is selected AND a chat is active, the header has to fit the
+   title, the Export button, and the model badge all in one row - on a
+   phone that's not enough room, and the doc title (the thing you actually
+   need to see) was losing that fight down to a few characters. Collapse
+   Export and the model badge to icon-only so the title gets the space. */
+@media (max-width: 480px) {
+  .header-btn .btn-label { display: none; }
+  .header-btn { padding: 7px 8px; }
+  .model-badge { padding: 5px 7px; }
+  .model-badge .model-name { display: none; }
+}
