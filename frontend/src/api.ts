@@ -25,7 +25,7 @@ export async function deleteDocument(docId: string) {
   await fetch(`${BASE}/documents/${docId}`, { method: "DELETE" });
 }
 
-export async function getHealth(): Promise<{ status: string; model: string }> {
+export async function getHealth(): Promise<{ status: string; chat: string; embed: string }> {
   const res = await fetch(`${BASE}/health`);
   if (!res.ok) throw new Error("Failed to load health");
   return res.json();

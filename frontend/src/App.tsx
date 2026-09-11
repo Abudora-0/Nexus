@@ -47,7 +47,7 @@ export default function App() {
   const selectedDocsRef = useRef<Set<string>>(selectedDocs);
 
   useEffect(() => { listDocuments().then(setDocuments).catch(()=>{}); }, []);
-  useEffect(() => { getHealth().then(h => setModel(h.model)).catch(()=>{}); }, []);
+  useEffect(() => { getHealth().then(h => setModel(h.chat.split(":").pop() ?? h.chat)).catch(()=>{}); }, []);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
   // selectedDocsRef must always mirror selectedDocs: sendMessage reads the ref
   // (not the state) to avoid stale closures. Syncing here, once, means every
