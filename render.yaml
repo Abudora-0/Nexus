@@ -20,7 +20,7 @@ services:
       - key: EMBED_PROVIDER
         value: gemini
       - key: EMBED_MODEL
-        value: text-embedding-004
+        value: gemini-embedding-001
       - key: EMBED_DIM
         value: "768"
       - key: GROQ_API_KEY

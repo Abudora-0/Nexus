@@ -9,7 +9,7 @@ changes — same RAG pipeline, same LanceDB vector store, same UI.
 | Backend (FastAPI) | Render Web Service | Free |
 | Frontend (Vite static) | Vercel | Free |
 | Chat (LLM) | Groq API (`llama-3.3-70b-versatile`) | Free tier |
-| Embeddings | Google Gemini API (`text-embedding-004`) | Free tier |
+| Embeddings | Google Gemini API (`gemini-embedding-001`) | Free tier |
 
 Chat and embeddings use different providers because **Groq has no embeddings
 API**. Embeddings only fire on document upload, so Gemini's free embedding
