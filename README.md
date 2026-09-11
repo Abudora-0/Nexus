@@ -43,7 +43,7 @@ A neon terminal / data archive: void-black background with a drifting circuit gr
 |---|---|
 | API | FastAPI + Uvicorn |
 | AI backend | Ollama (local) or Groq + Gemini (hosted) — `CHAT_PROVIDER` / `EMBED_PROVIDER` |
-| Language Model | `qwen2.5:1.5b` local · `llama-3.3-70b-versatile` (Groq) hosted |
+| Language Model | `qwen2.5:1.5b` local · `openai/gpt-oss-120b` (Groq) hosted |
 | Embeddings | `nomic-embed-text` local · `gemini-embedding-001` (Gemini) hosted |
 | Vector Store | LanceDB |
 | PDF Parsing | pdfplumber |

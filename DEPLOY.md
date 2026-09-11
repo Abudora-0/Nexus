@@ -8,7 +8,7 @@ changes — same RAG pipeline, same LanceDB vector store, same UI.
 |---|---|---|
 | Backend (FastAPI) | Render Web Service | Free |
 | Frontend (Vite static) | Vercel | Free |
-| Chat (LLM) | Groq API (`llama-3.3-70b-versatile`) | Free tier |
+| Chat (LLM) | Groq API (`openai/gpt-oss-120b`) | Free tier |
 | Embeddings | Google Gemini API (`gemini-embedding-001`) | Free tier |
 
 Chat and embeddings use different providers because **Groq has no embeddings

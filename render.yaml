@@ -16,7 +16,7 @@ services:
       - key: CHAT_PROVIDER
         value: groq
       - key: CHAT_MODEL
-        value: llama-3.3-70b-versatile
+        value: openai/gpt-oss-120b
       - key: EMBED_PROVIDER
         value: gemini
       - key: EMBED_MODEL

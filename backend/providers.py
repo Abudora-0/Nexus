@@ -34,7 +34,7 @@ EMBED_PROVIDER = os.getenv("EMBED_PROVIDER", _BOTH).lower()
 _DEFAULT_CHAT = {
     "ollama": "qwen2.5:1.5b",
     "gemini": "gemini-2.0-flash",
-    "groq": "llama-3.3-70b-versatile",
+    "groq": "openai/gpt-oss-120b",
 }
 _DEFAULT_EMBED = {"ollama": "nomic-embed-text", "gemini": "text-embedding-004"}
 CHAT_MODEL = os.getenv("CHAT_MODEL", _DEFAULT_CHAT.get(CHAT_PROVIDER, "qwen2.5:1.5b"))
