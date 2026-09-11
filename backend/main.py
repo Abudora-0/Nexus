@@ -191,6 +191,24 @@ def remove_document(doc_id: str):
     delete_document(doc_id)
     return {"message": f"Deleted '{doc_id}'."}
 
+# TEMPORARY: lists the Groq models this key can actually use, to find a
+# replacement for a retired CHAT_MODEL without needing shell access on the
+# free Render tier. Remove this route once the right model id is confirmed.
+@app.get("/debug/groq-models")
+async def debug_groq_models():
+    import httpx as _httpx
+    if not providers.GROQ_API_KEY:
+        raise HTTPException(400, "GROQ_API_KEY not set.")
+    async with _httpx.AsyncClient(timeout=20) as client:
+        r = await client.get(
+            f"{providers.GROQ_BASE}/models",
+            headers={"Authorization": f"Bearer {providers.GROQ_API_KEY}"},
+        )
+        r.raise_for_status()
+        ids = sorted(m["id"] for m in r.json().get("data", []))
+    return {"models": ids}
+
+
 @app.get("/health")
 def health():
     return {
