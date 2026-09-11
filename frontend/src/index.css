@@ -96,6 +96,16 @@ body::after {
   100% { opacity: 1;    transform: translate3d(-1.5%, 1.5%, 0) scale(1.03); }
 }
 
+/* Both ambient layers above are full-viewport, fixed, and animate forever.
+   grid-drift repaints via background-position (not GPU-compositable) under
+   a mask-image, and bloom-drift continuously transforms three overlapping
+   radial gradients — cheap enough on desktop, but two permanent full-screen
+   repaints are a real jank/battery cost on mid-range mobile GPUs. Keep the
+   static look there, just stop animating it. */
+@media (max-width: 768px), (prefers-reduced-motion: reduce) {
+  body::before, body::after { animation: none; }
+}
+
 #root { position: relative; z-index: 1; height: 100%; }
 
 /* ── neon scrollbars ─────────────────────────────────────────────── */
