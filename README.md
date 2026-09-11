@@ -4,9 +4,15 @@
 
 <h1 align="center">Nexus</h1>
 
+<p align="center">
+  <a href="https://nexus-chatboot.vercel.app"><img src="https://img.shields.io/badge/Live_Demo-nexus--chatboot.vercel.app-00FFD1?logo=vercel&logoColor=black" alt="Live Demo" /></a>
+</p>
+
 <p align="center">A document chat application. Upload PDFs or text files and ask questions about them, powered by RAG (Retrieval-Augmented Generation). Runs <strong>fully local</strong> via Ollama — no API keys, no cloud, no data leaves your machine — or against a hosted API for a zero-cost public demo.</p>
 
-<p align="center"><a href="DEPLOY.md">Live demo setup</a> · runs the same pipeline on free-tier hosted APIs (Groq + Gemini)</p>
+<p align="center"><a href="https://nexus-chatboot.vercel.app">Try the live demo</a> · <a href="DEPLOY.md">deployment guide</a> · runs the same pipeline on free-tier hosted APIs (Groq + Gemini)</p>
+
+> **Note:** the demo backend is on Render's free tier and sleeps after ~15 min idle — the first message after a quiet spell can take ~50s to wake it up, then it's fast.
 
 <p align="center">
   <img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white" alt="FastAPI" />
